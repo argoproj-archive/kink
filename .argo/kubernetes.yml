@@ -1,0 +1,162 @@
+---
+type: workflow
+version: 1
+name: kubernetes-workflow
+description: This creates 2 deployments that forms a kubernetes cluster
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+    CLUSTERID:
+    APPNAME:
+    PODCIDR:
+      default: "10.100.0.0/16"
+steps:
+- CLUSTER_CONFIG:
+    image: alpine:latest
+    resources:
+      cpu_cores: 0.01
+      mem_mib: 64
+    env:
+    - name: PARAMETER_OF_INTEREST
+      value: "%%inputs.parameters.CLUSTERID%%"
+    command: ["/bin/sh", "-c", "echo $PARAMETER_OF_INTEREST > /tmp/cluster-id && echo true > /tmp/is-master && echo %%inputs.parameters.PODCIDR%% > /tmp/pod_cidr"]
+    outputs:
+      artifacts:
+        PARAM:
+          path: /tmp/cluster-id
+        ISMASTER:
+          path: /tmp/is-master
+        PODCIDR:
+          path: /tmp/pod_cidr
+  GENERATE_TOKEN:
+    image: abhinavdock/kubeadm:1.7.4
+    image_pull_policy: Always
+    resources:
+      cpu_cores: 0.05
+      mem_mib: 64
+    command: ["/bin/sh", "-c", "/kubeadm token generate > /tmp/token"]
+    outputs:
+      artifacts:
+        TOKEN:
+          path: /tmp/token
+- MASTER_DEPLOYMENT:
+    template: k8s-master-deployment
+    arguments:
+      parameters.APPNAME: "%%inputs.parameters.APPNAME%%"
+      parameters.CLUSTERID: "%%inputs.parameters.CLUSTERID%%"
+      artifacts.TOKEN: "%%steps.GENERATE_TOKEN.outputs.artifacts.TOKEN%%"
+      artifacts.CLUSTERID: "%%steps.CLUSTER_CONFIG.outputs.artifacts.PARAM%%"
+      artifacts.ISMASTER: "%%steps.CLUSTER_CONFIG.outputs.artifacts.ISMASTER%%"
+      artifacts.PODCIDR: "%%steps.CLUSTER_CONFIG.outputs.artifacts.PODCIDR%%"
+- MINION_DEPLOYMENT:
+    template: k8s-minion-deployment
+    arguments:
+      parameters.APPNAME: "%%inputs.parameters.APPNAME%%"
+      artifacts.TOKEN: "%%steps.GENERATE_TOKEN.outputs.artifacts.TOKEN%%"
+      artifacts.CLUSTERID: "%%steps.CLUSTER_CONFIG.outputs.artifacts.PARAM%%"
+
+---
+type: deployment
+version: 1
+name: k8s-master-deployment
+inputs:
+  parameters:
+    APPNAME:
+    CLUSTERID:
+  artifacts:
+    TOKEN:
+    CLUSTERID:
+    ISMASTER:
+    PODCIDR:
+application_name: "%%inputs.parameters.APPNAME%%"
+deployment_name: master
+volumes:
+  etcd:
+    storage_class: ssd
+    size_gb: 10
+  configs:
+    storage_class: ssd
+    size_gb: 1
+internal_routes:
+- name: kubernetes
+  ports:
+  - port: 443
+    target_port: 6443
+- name: discovery
+  ports:
+  - port: 9898
+    target_port: 9898
+containers:
+  MASTER:
+    image: abhinavdock/kink:latest
+    resources:
+      cpu_cores: 1
+      mem_mib: 2048
+    readiness_probe:
+      initial_delay_seconds: 300
+      timeout_seconds: 60
+      period_seconds: 60
+      failure_threshold: 5
+      success_threshold: 1
+      exec:
+        command: /usr/local/bin/readiness.sh
+    inputs:
+      artifacts:
+        TOKEN:
+          from: "%%inputs.artifacts.TOKEN%%"
+          path: /etc/kubernetes/clusterconfig/secret    # token file is expected in this location
+        CLUSTERID:
+          from: "%%inputs.artifacts.CLUSTERID%%"
+          path: /etc/kubernetes/clusterconfig/id    # cluster-id file is expected in this location
+        ISMASTER:
+          from: "%%inputs.artifacts.ISMASTER%%"
+          path: /etc/kubernetes/clusterconfig/mode # is-master file is expected here
+        PODCIDR:
+          from: "%%inputs.artifacts.PODCIDR%%"
+          path: /etc/kubernetes/clusterconfig/pod_cidr_range # pod_cidr file is expected here
+      volumes:
+        ETCD:
+          from: "%%volumes.etcd%%"
+          mount_path: /var/lib/etcd
+        CONFIGS:
+          from: "%%volumes.configs%%"
+          mount_path: /etc/kubernetes
+    annotations:
+      ax_ea_executor: '{"disable": true}'
+      ax_ea_privileged: 'true'
+      ax_ea_graph_storage_volume: '{"graph-storage-size": "40Gi", "mount-path": "/var/lib/docker"}'
+      ax_ea_hostname: "%%inputs.parameters.CLUSTERID%%-master"
+
+---
+type: deployment
+version: 1
+name: k8s-minion-deployment
+inputs:
+  parameters:
+    APPNAME:
+  artifacts:
+    TOKEN:
+    CLUSTERID:
+application_name: "%%inputs.parameters.APPNAME%%"
+deployment_name: minion
+containers:
+  MINION:
+    image: abhinavdock/kink:latest
+    resources:
+      cpu_cores: 1
+      mem_mib: 2048
+    inputs:
+      artifacts:
+        TOKEN:
+          from: "%%inputs.artifacts.TOKEN%%"
+          path: /etc/kubernetes/clusterconfig/secret    # token file is expected in this location
+        CLUSTERID:
+          from: "%%inputs.artifacts.CLUSTERID%%"
+          path: /etc/kubernetes/clusterconfig/id    # cluster-id file is expected in this location
+    annotations:
+      ax_ea_executor: '{"disable": true}'
+      ax_ea_privileged: 'true'
+      ax_ea_graph_storage_volume: '{"graph-storage-size": "40Gi", "mount-path": "/var/lib/docker"}'
