@@ -58,14 +58,18 @@ function start-master() {
   sleep 30
   kubectl --kubeconfig="${config}" --namespace=kube-system delete pod -l k8sapp=kube-dns
 
+  # copy config for easy kubectl commands
+  mkdir -p ${HOME}/.kube
+  cp ${config} ${HOME}/.kube
+  update-conf "https://.*" "https://kubernetes:443" "${HOME}/.kube/config"
+
   # finally save the kube configuration to a secret so that it can be read by slaves
   kube-main delete secret "${cluster_id}-admin-conf" --ignore-not-found
-  update-conf "https://.*" "https://kubernetes:443" ${config}
-  kube-main create secret generic "${cluster_id}-admin-conf" --from-file="${config}"
+  kube-main create secret generic "${cluster_id}-admin-conf" --from-file="${HOME}/.kube/config"
 
   # just dump out everything now
   sleep 30
-  kubectl --kubeconfig="${config}" --all-namespaces -o wide
+  kubectl --kubeconfig="${config}" get pods --all-namespaces -o wide
 
 }
 
