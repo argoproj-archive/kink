@@ -92,6 +92,9 @@ internal_routes:
 containers:
   MASTER:
     image: abhinavdock/kink:latest
+    env:
+    - name: CLUSTERID
+      value: "%%inputs.parameters.CLUSTERID%%"
     resources:
       cpu_cores: 1
       mem_mib: 2048
