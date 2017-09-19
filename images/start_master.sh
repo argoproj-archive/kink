@@ -56,7 +56,7 @@ function start-master() {
   # for some reason, the kube-dns initially has trouble communicating with api server with 10.96.0.1 ip
   # and whats even more strange is that if we delete the kube-dns pod then it works when it restarts
   sleep 30
-  kubectl --kubeconfig="${config}" --namespace=kube-system delete pod -l k8sapp=kube-dns
+  kubectl --kubeconfig="${config}" --namespace=kube-system delete pod -l k8s-app=kube-dns
 
   # copy config for easy kubectl commands
   mkdir -p ${HOME}/.kube
