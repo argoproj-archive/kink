@@ -96,10 +96,10 @@ containers:
       cpu_cores: 1
       mem_mib: 2048
     readiness_probe:
-      initial_delay_seconds: 300
+      initial_delay_seconds: 60
       timeout_seconds: 60
       period_seconds: 60
-      failure_threshold: 5
+      failure_threshold: 3
       success_threshold: 1
       exec:
         command: /usr/local/bin/readiness.sh

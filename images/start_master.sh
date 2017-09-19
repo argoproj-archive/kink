@@ -46,9 +46,18 @@ function start-master() {
   sed -i 's/192.168.0.0\/16/'${pod_cidr_slash}'/' calico.yaml
   kubectl --kubeconfig="${config}" apply -f calico.yaml
 
+  # for some reason, the kube-dns initially has trouble communicating with api server with 10.96.0.1 ip
+  # and whats even more strange is that if we delete the kube-dns pod then it works when it restarts
+  sleep 30
+  kubectl --kubeconfig="${config}" --namespace=kube-system delete pod -l k8sapp=kube-dns
+
   # finally save the kube configuration to a secret so that it can be read by slaves
   kube-main delete secret "${cluster_id}-admin-conf" --ignore-not-found
   kube-main create secret generic "${cluster_id}-admin-conf" --from-file="${config}"
+
+  # just dump out everything now
+  sleep 30
+  kubectl --kubeconfig="${config}" --all-namespaces -o wide
 
 }
 
@@ -56,9 +65,7 @@ function start-minion() {
   local kubeadm_token; kubeadm_token="$(cat /etc/kubernetes/clusterconfig/secret/token)"
   kubeadm join --skip-preflight-checks --token ${kubeadm_token} kubernetes:443
  
-  # once kubeadm is done do the followin
-  # 1. modify resolv.conf to have only 3 search domains
-  # 2. restart kubelet
+  # once kubeadm is done we need to restart kubelet for node to join master
   pkill -9 kubelet
 }
 
