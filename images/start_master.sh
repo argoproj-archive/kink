@@ -37,8 +37,7 @@ function start-master() {
           --skip-preflight-checks \
           --token ${kubeadm_token} \
           --service-dns-domain "${cluster_id}.local" \
-          --pod-network-cidr=${pod_cidr} \
-          --apiserver-advertise-address kubernetes:443
+          --pod-network-cidr=${pod_cidr}
 
   local config="/etc/kubernetes/admin.conf"
 
@@ -76,7 +75,7 @@ function start-master() {
 function start-minion() {
   local kubeadm_token; kubeadm_token="$(cat /etc/kubernetes/clusterconfig/secret/token)"
   local cluster_id; cluster_id="$(cat /etc/kubernetes/clusterconfig/id/cluster-id)"
-  kubeadm join --skip-preflight-checks --token ${kubeadm_token} kubernetes:443
+  kubeadm join --skip-preflight-checks --token ${kubeadm_token} "${cluster_id}-master:443"
  
   # change the config so that it is not using pod ip
   update-conf "https://.*" "https://${cluster_id}-master:443" /etc/kubernetes/kubelet.conf
