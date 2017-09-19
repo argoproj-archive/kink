@@ -140,7 +140,7 @@ containers:
       # ax_ea_executor: '{"disable": true}'
       ax_ea_privileged: 'true'
       ax_ea_graph_storage_volume: '{"graph-storage-size": "40Gi", "mount-path": "/var/lib/docker"}'
-      ax_ea_hostname: "%%inputs.parameters.CLUSTERID%%-master"
+      ax_ea_hostname: "%%inputs.parameters.CLUSTERID%%-master-node"
 
 ---
 type: deployment
