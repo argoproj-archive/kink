@@ -60,7 +60,7 @@ function start-master() {
 
   # copy config for easy kubectl commands
   mkdir -p ${HOME}/.kube
-  cp ${config} ${HOME}/.kube
+  cp ${config} ${HOME}/.kube/config
   update-conf "https://.*" "https://kubernetes:443" "${HOME}/.kube/config"
 
   # finally save the kube configuration to a secret so that it can be read by slaves
