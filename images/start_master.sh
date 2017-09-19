@@ -60,12 +60,12 @@ function start-master() {
 
   # copy config for easy kubectl commands
   mkdir -p ${HOME}/.kube
-  cp ${config} ${HOME}/.kube/config
-  update-conf "https://.*" "https://kubernetes:443" "${HOME}/.kube/config"
+  cp ${config} ${HOME}/.kube/admin-config
+  update-conf "https://.*" "https://${cluster_id}-master:443" "${HOME}/.kube/admin-config"
 
   # finally save the kube configuration to a secret so that it can be read by slaves
   kube-main delete secret "${cluster_id}-admin-conf" --ignore-not-found
-  kube-main create secret generic "${cluster_id}-admin-conf" --from-file="${HOME}/.kube/config"
+  kube-main create secret generic "${cluster_id}-admin-conf" --from-file="${HOME}/.kube/admin-config"
 
   # just dump out everything now
   sleep 30
@@ -75,10 +75,11 @@ function start-master() {
 
 function start-minion() {
   local kubeadm_token; kubeadm_token="$(cat /etc/kubernetes/clusterconfig/secret/token)"
+  local cluster_id; cluster_id="$(cat /etc/kubernetes/clusterconfig/id/cluster-id)"
   kubeadm join --skip-preflight-checks --token ${kubeadm_token} kubernetes:443
  
   # change the config so that it is not using pod ip
-  update-conf "https://.*" "https://kubernetes:443" /etc/kubernetes/kubelet.conf
+  update-conf "https://.*" "https://${cluster_id}-master:443" /etc/kubernetes/kubelet.conf
 
   # once kubeadm is done we need to restart kubelet for node to join master
   pkill -9 kubelet

@@ -58,7 +58,15 @@ steps:
       parameters.CLUSTERID: "%%inputs.parameters.CLUSTERID%%"
       artifacts.TOKEN: "%%steps.GENERATE_TOKEN.outputs.artifacts.TOKEN%%"
       artifacts.CLUSTERID: "%%steps.CLUSTER_CONFIG.outputs.artifacts.PARAM%%"
-
+- GET_CONFIG:
+    image: lachlanevenson/k8s-kubectl:v1.7.6
+    command:
+    - /bin/sh
+    - -c
+    - 'sleep 600'
+    resources:
+      cpu_cores: 0.05
+      mem_mib: 128
 ---
 type: deployment
 version: 1
@@ -82,11 +90,11 @@ volumes:
     storage_class: ssd
     size_gb: 1
 internal_routes:
-- name: kubernetes
+- name: "ktest1-master"
   ports:
   - port: 443
     target_port: 6443
-- name: discovery
+- name: "ktest1-discovery"
   ports:
   - port: 9898
     target_port: 9898
