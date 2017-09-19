@@ -21,8 +21,8 @@ function kube-main() {
 }
 
 function update-conf {
-  search=$1
-  replace=$2
+  search=$(echo $1 | sed 's./.\\/.g')
+  replace=$(echo $2 | sed 's./.\\/.g')
   file=$3
   sed -i 's/'${search}'/'${replace}'/' ${file}
 }
@@ -60,7 +60,7 @@ function start-master() {
 
   # finally save the kube configuration to a secret so that it can be read by slaves
   kube-main delete secret "${cluster_id}-admin-conf" --ignore-not-found
-  update-conf "https:\/\/.*" "https://kubernetes:443" ${config}
+  update-conf "https://.*" "https://kubernetes:443" ${config}
   kube-main create secret generic "${cluster_id}-admin-conf" --from-file="${config}"
 
   # just dump out everything now
@@ -74,7 +74,7 @@ function start-minion() {
   kubeadm join --skip-preflight-checks --token ${kubeadm_token} kubernetes:443
  
   # change the config so that it is not using pod ip
-  update-conf "https:\/\/.*" "https://kubernetes:443" /etc/kubernetes/kubelet.conf
+  update-conf "https://.*" "https://kubernetes:443" /etc/kubernetes/kubelet.conf
 
   # once kubeadm is done we need to restart kubelet for node to join master
   pkill -9 kubelet

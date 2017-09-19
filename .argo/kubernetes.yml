@@ -55,6 +55,7 @@ steps:
     template: k8s-minion-deployment
     arguments:
       parameters.APPNAME: "%%inputs.parameters.APPNAME%%"
+      parameters.CLUSTERID: "%%inputs.parameters.CLUSTERID%%"
       artifacts.TOKEN: "%%steps.GENERATE_TOKEN.outputs.artifacts.TOKEN%%"
       artifacts.CLUSTERID: "%%steps.CLUSTER_CONFIG.outputs.artifacts.PARAM%%"
 
@@ -140,6 +141,7 @@ name: k8s-minion-deployment
 inputs:
   parameters:
     APPNAME:
+    CLUSTERID:
   artifacts:
     TOKEN:
     CLUSTERID:
@@ -148,6 +150,9 @@ deployment_name: minion
 containers:
   MINION:
     image: abhinavdock/kink:latest
+    env:
+    - name: CLUSTERID
+      value: "%%inputs.parameters.CLUSTERID%%"
     resources:
       cpu_cores: 1
       mem_mib: 2048
