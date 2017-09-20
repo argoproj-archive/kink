@@ -15,8 +15,7 @@ RUN apt-get update  && \
     apt-get install -y docker-ce
     
 RUN mkdir -p /var/log/supervisor && \ 
-    mkdir -p /var/log/docker && \
-    mkdir -p /var/log/jenkins
+    mkdir -p /var/log/docker
 
 RUN wget https://dl.k8s.io/v1.7.6/kubernetes-server-linux-amd64.tar.gz && \
     tar -xvzf kubernetes-server-linux-amd64.tar.gz && \

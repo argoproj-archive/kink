@@ -59,14 +59,36 @@ steps:
       artifacts.TOKEN: "%%steps.GENERATE_TOKEN.outputs.artifacts.TOKEN%%"
       artifacts.CLUSTERID: "%%steps.CLUSTER_CONFIG.outputs.artifacts.PARAM%%"
 - GET_CONFIG:
-    image: lachlanevenson/k8s-kubectl:v1.7.6
-    command:
-    - /bin/sh
-    - -c
-    - 'sleep 600'
+    image: abhinavdock/getconfig:latest
+    command: ['/usr/local/bin/extract_secret.sh']
+    env:
+    - name: APPNAME
+      value: "%%inputs.parameters.APPNAME%%"
+    - name: CLUSTERID
+      value: "%%inputs.parameters.CLUSTERID%%"
     resources:
       cpu_cores: 0.05
       mem_mib: 128
+    outputs:
+      artifacts:
+        CONFIG:
+          path: /tmp/admin.config
+- UNIT_TEST:
+    image: abhinavdock/getconfig:latest
+    command: ['/usr/local/bin/test_cluster.sh']
+    env:
+    - name: APPNAME
+      value: "%%inputs.parameters.APPNAME%%"
+    - name: CLUSTERID
+      value: "%%inputs.parameters.CLUSTERID%%"
+    resources:
+      cpu_cores: 0.05
+      mem_mib: 128
+    inputs:
+      artifacts:
+        CONFIG: 
+          from: "%%steps.GET_CONFIG.outputs.artifacts.CONFIG%%"
+          path: /root/.kube/
 ---
 type: deployment
 version: 1

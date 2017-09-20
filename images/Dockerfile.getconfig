@@ -1,0 +1,6 @@
+FROM lachlanevenson/k8s-kubectl:v1.7.6
+
+RUN apk update && apk add jq curl bash
+COPY extract_secret.sh /usr/local/bin/
+COPY test_cluster.sh /usr/local/bin/
+COPY test_deployment.yaml /root/
