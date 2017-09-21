@@ -112,11 +112,11 @@ volumes:
     storage_class: ssd
     size_gb: 1
 internal_routes:
-- name: "ktest1-master"
+- name: "%%inputs.parameters.CLUSTERID%%-master"
   ports:
   - port: 443
     target_port: 6443
-- name: "ktest1-discovery"
+- name: "%%inputs.parameters.CLUSTERID%%-discovery"
   ports:
   - port: 9898
     target_port: 9898
