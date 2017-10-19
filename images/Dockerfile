@@ -1,6 +1,6 @@
 FROM ubuntu:xenial
 
-MAINTAINER abhinav@applatix.com
+LABEL maintainer="abhinav@applatix.com"
  
 # Install Docker
 RUN apt-get update  && \
